@@ -25,4 +25,9 @@ The Ovation Field Data Importer for R provides data import/export functions for 
     exp <- context$getObjectWithURI('<experiment uri>')
     epochs <- CollectEpochs(exp)
     df <- CollectLegacyMeasurements(epochs)
+    
+## License
+THe Ovation Field Data Importer for R is provided under the terms of the GPLv3 license (see LICENSE.txt)
+
+The Ovation Field Data Importer for R is copyright (c) 2013 Physion LLC.
 

@@ -1,7 +1,7 @@
 Package: fielddata
 Type: Package
 Title: Ovation Field Data Importer for R 
-Version: 1.0
+Version: 1.1
 Date: 2013-07-20
 Author: Physion
 Depends:
@@ -9,5 +9,5 @@ Depends:
 SystemRequirements : Java
 Maintainer: Physion <info@physion.us>
 Description: Ovation Field Data Importer for R (http://ovation.io)
-License: GPLv3
+License: GPL
 LazyLoad: yes

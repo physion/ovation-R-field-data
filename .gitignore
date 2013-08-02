@@ -5,3 +5,10 @@
 
 # Example code in package build process
 *-Ex.R
+
+fielddata.Rcheck
+
+.DS_Store
+ovation-R-field-data.Rproj
+
+*.Rproj

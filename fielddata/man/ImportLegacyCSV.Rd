@@ -13,7 +13,7 @@
   \item{protocol.uri}{String containing the URI of the
   measurement Protocol}
 
-  \item{container.ui}{String containing the URI of the
+  \item{container.uri}{String containing the URI of the
   EpochGroupContainer (i.e. Experiment or EpochGroup) that
   will hold the newly inserted data}
 
