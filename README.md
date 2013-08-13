@@ -13,7 +13,7 @@ The Ovation Field Data Importer for R provides data import/export functions for 
 
 ## Usage
 
-    library(field-data)
+    library(fielddata)
     InitRovation()
     
     context <- NewDataContext('<email>')
