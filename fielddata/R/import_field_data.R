@@ -48,7 +48,7 @@ habitats <- list(m = 'mesic', d = 'dry', w = 'wet')
 #' @param context Ovation DataContext
 #' @param protocol.uri String containing the URI of the measurement Protocol
 #' @param container.uri String containing the URI of the EpochGroupContainer (i.e. Experiment or EpochGroup) that will hold the newly inserted data
-#' @param tzone Data collection timezone [Default = local time zone]
+#' @param tzone Data collection timezone name (String) [Default = local time zone]
 #' @return list of inserted EpochGroups
 #' @export
 ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzone=NULL) {
