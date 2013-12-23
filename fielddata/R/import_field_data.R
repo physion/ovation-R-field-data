@@ -97,8 +97,11 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
   swallow <- d_ply(df, .variables=.(PLOT, YEAR, DOY), 
                    #.progress = progress_text(char = "."), 
                    .fun=function(g) {
-                     if((from.year == NULL || unique(g$YEAR) >= from.year) &&
-                          (from.doy == NULL || from.year == NULL || unique(g$YEAR) > from.year || unique(g$DOY) >= from.doy)) {
+                     
+                     
+                     if( (is.null(from.year) || unique(g$YEAR) >= from.year) &&
+                          (is.null(from.doy) || is.null(from.year) || unique(g$YEAR) > from.year || unique(g$DOY) >= from.doy)) {
+                       
                        date <- MakeDate(unique(g$YEAR), unique(g$DOY), tzone$getID())
                        
                        plot.name <- unique(g$PLOT)
@@ -107,6 +110,7 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                        start <- day.ends$start
                        
                        group.name <- sprintf("%s-%s-%s", start$getYear(), start$getMonthOfYear(), start$getDayOfMonth())
+                       context$beginTransaction()
                        #Insert a new EpochGroup if one with group.name doesn't exist yet
                        if(is.null(epoch.groups[[start$toString()]])) {
                          cat(sprintf("Adding EpochGroup %s\n", group.name))
@@ -153,6 +157,8 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                                                  NewUrl(file.name),
                                                  "text/csv")
                        })
+                       
+                       context$commitTransaction()
                        
                      }
                    })
