@@ -160,10 +160,9 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                        
                        context$commitTransaction()
                        
+                       WaitForPendingUploads(context)  
                      }
                    })
-  
-  WaitForPendingUploads(context)
   
   return(epoch.groups)
 }
