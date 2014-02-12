@@ -109,7 +109,7 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                        day.ends <- DayEnds(date)
                        start <- day.ends$start
                        
-                       group.name <- sprintf("%s-%s-%s", start$getYear(), start$getMonthOfYear(), start$getDayOfMonth())
+                       group.name <- sprintf("%s %s-%s-%s", plot.name, start$getYear(), start$getMonthOfYear(), start$getDayOfMonth())
                        context$beginTransaction()
                        #Insert a new EpochGroup if one with group.name doesn't exist yet
                        if(is.null(epoch.groups[[start$toString()]])) {
