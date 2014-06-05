@@ -31,27 +31,21 @@ MakeDate <- function(year, day_of_year, tzone=NULL) {
   return(d$withYear(as.integer(year))$withDayOfYear(as.integer(day_of_year))$toDateMidnight()$toDateTime())
 }
 
-DayEnds <- function(date.time) {
-  midnight <- date.time$toDateMidnight()$toDateTime()
-  return(list(start = midnight,
-              end = midnight$plusDays(as.integer(1))$minusSeconds(as.integer(1))))
-}
 
 habitats <- list(m = 'mesic', d = 'dry', w = 'wet')
 
 #' Imports field data from the "legacy" template
 #' 
-#' This import creates an EpochGroup for each date, an Epoch for each site and a Measurement
-#' for each species within the site.
+#' This import creates an Epoch for each year within a single Epoch container
 #' 
 #' @param csv.path Path to the CSV file
 #' @param context Ovation DataContext
 #' @param protocol.uri String containing the URI of the measurement Protocol
-#' @param container.uri String containing the URI of the EpochGroupContainer (i.e. Experiment or EpochGroup) that will hold the newly inserted data
+#' @param container.uri String containing the URI of the EpochContainer (i.e. Experiment or EpochGroup) that will hold the newly inserted data
 #' @param tzone Data collection timezone name (String) [Default = local time zone]
 #' @return list of inserted EpochGroups
 #' @export
-ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzone=NULL, from.year=NULL, from.doy=NULL) {
+ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzone=NULL) {
   tzone <- time.zone(tzone)
   
   # Read the CSV file
@@ -63,107 +57,104 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
   
   cat("\n\n")
   # Insert Sources if not already present
-  cat("Checking Sources...\n")
-  sites <- list()
-  swallow <- apply(df, 1, function(r) {
-    plot.name <- r['PLOT']
-    habitat <- habitats[[r['HABITAT']]]
-    if(is.null(sites[[plot.name]])) {
-      plot.label <- sprintf("Plot %s", plot.name)
-      existing.sites <- as.list(context$getSourcesWithIdentifier(plot.name))
-      
-      if(length(existing.sites) == 0) {
-        cat(sprintf("  Adding plot %s...\n", plot.name))
-        sites[[plot.name]] <<- context$insertSource(plot.label, plot.name)
-      } else {
-        sites[[plot.name]] <<- existing.sites[[1]]
-      }
-      
-      sites[[plot.name]]$addProperty('habitat', habitat)
-    }
-    
-  })
+  cat("Checking Sources\n")
+  cat("****************\n")
+  known.sites <- new(J("java.util.HashSet"))
+#   swallow <- apply(df, 1, function(r) {
+#     plot.name <- r['PLOT']
+#     if(!known.sites$contains(plot.name)) {
+#       habitat <- habitats[[r['HABITAT']]]
+#       plot.label <- sprintf("Plot %s", plot.name)
+#       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
+#       cat(sprintf("  Checking %s...\n", plot.id))
+#       
+#       srcResult <- context$getOrInsertSource(plot.label, plot.id)
+#       
+#       if(srcResult$isNew()) {
+#         srcResult$get()$addProperty('habitat', habitat)
+#       }
+#       
+#       known.sites$add(plot.name)
+#     }
+#     
+#   })
   
   
-  # Collect existing EpochGroups so that we can collate inserted Epochs with existing EpochGroups
-  epoch.groups <- list()
-  group.iter <- container$getEpochGroups()$iterator()
-  while(group.iter$hasNext()) {
-    g <- IteratorNext(group.iter)
-    epoch.groups[[g$getStart()$toString()]] <- g
-  }
-  
-  # Insert data group by Plot,Date
-  swallow <- d_ply(df, .variables=.(PLOT, YEAR, DOY), 
+  # Insert data group by YEAR
+  cat("\n\n")
+  cat("Importing data\n")
+  cat("**************\n")
+  swallow <- d_ply(df, .variables=.(YEAR), 
                    #.progress = progress_text(char = "."), 
                    .fun=function(g) {
                      
+                     year = unique(g$YEAR)
                      
-                     if( (is.null(from.year) || unique(g$YEAR) >= from.year) &&
-                          (is.null(from.doy) || is.null(from.year) || unique(g$YEAR) > from.year || unique(g$DOY) >= from.doy)) {
-                       
-                       date <- MakeDate(unique(g$YEAR), unique(g$DOY), tzone$getID())
-                       
-                       plot.name <- unique(g$PLOT)
-                       plot <- sites[[plot.name]]
-                       day.ends <- DayEnds(date)
-                       start <- day.ends$start
-                       
-                       group.name <- sprintf("%s %s-%s-%s", plot.name, start$getYear(), start$getMonthOfYear(), start$getDayOfMonth())
-                       context$beginTransaction()
-                       #Insert a new EpochGroup if one with group.name doesn't exist yet
-                       if(is.null(epoch.groups[[start$toString()]])) {
-                         cat(sprintf("Adding EpochGroup %s\n", group.name))
-                         group <- container$insertEpochGroup(group.name,
-                                                             start,
-                                                             protocol,
-                                                             new(J("java.util.HashMap")),
-                                                             new(J("java.util.HashMap")))
-                         epoch.groups[[start$toString()]] <<- group
+                     cat(sprintf("Importing %s... \n", as.character(year)))
+                     start.doy = min(g$DOY)
+                     end.doy = max(g$DOY)
+                     
+                     start.date <- MakeDate(year, start.doy, tzone$getID())
+                     end.date <- MakeDate(year, end.doy, tzone$getID())
+                     
+                     plot.sites <- unique(g$PLOT)
+                     
+                     input.sources <- new(J("java.util.HashMap"))
+                     lapply(as.character(plot.sites), function(plot) {
+                       plot.label <- sprintf("Plot %s", plot)
+                       plot.id <- sprintf("rmbl-phenology-%s", plot)
+                       srcResult <- context$getOrInsertSource(plot.label, plot.id)
+                       input.sources$put(plot, srcResult$get())
+                     })
+                     
+                     # Insert an Epoch for these measurements
+                     
+                     epoch <- container$insertEpoch(input.sources,
+                                                    NULL,
+                                                    start.date,
+                                                    end.date,
+                                                    protocol,
+                                                    new(J("java.util.HashMap")),
+                                                    new(J("java.util.HashMap")))
+                     
+                     # Insert a measurement for this group
+                     file.desc <- sprintf("%s", start.date$getYear())
+                     file.name <- tempfile(pattern=file.desc, fileext=".csv")
+                     write.csv(g, file=file.name, row.names=FALSE)
+                     
+                     source.names <- Vector2Set(c(as.character(unique(g$PLOT))))
+                     measurement.name <- sprintf("%s.csv", file.desc)
+                     cat(sprintf("    %s \n", measurement.name))
+                     epoch$insertMeasurement(measurement.name,
+                                             source.names,
+                                             Vector2Set(c()),
+                                             NewUrl(file.name),
+                                             'text/csv');
+                     
+                     
+                     # Update Plot tags
+                     cat("    Adding species tags...\n")
+                     sources <- new(J("java.util.HashMap"))
+                     apply(g, 1, function(r) {
+                       species <- r['SPECIES']
+                       plot.name <- r['PLOT']
+                       plot.label <- sprintf("Plot %s", plot.name)
+                       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
+                       if(sources$containsKey(plot.name)) {
+                         src <- sources$get(plot.name)
                        } else {
-                         cat(sprintf("Inserting Epochs into existing EpochGroup %s\n", group.name))
+                         src <- context$getOrInsertSource(plot.label, plot.id)$get()  
+                         sources$put(plot.name, src)
                        }
                        
-                       
-                       # Insert an Epoch for these measurements
-                       input.sources <- new(J("java.util.HashMap"))
-                       input.sources$put(as.character(plot.name), plot)
-                       
-                       epoch <- epoch.groups[[start$toString()]]$insertEpoch(input.sources,
-                                                                             NULL,
-                                                                             start,
-                                                                             day.ends$end,
-                                                                             protocol,
-                                                                             new(J("java.util.HashMap")),
-                                                                             new(J("java.util.HashMap")))
-                       
-                       # Insert a measurement per row
-                       apply(g, 1, function(r) {
-                         species <- r['SPECIES']
-                         cat(sprintf("  %s...\n", species))
-                         
-                         flower.count <- as.integer(r['X..FLOWERS'])
-                         measurement.df <- data.frame(Species = species,
-                                                      FLOWER_COUNT = flower.count)
-                         file.name <- tempfile(pattern=group.name, fileext=".csv")
-                         write.csv(measurement.df, file=file.name, row.names=FALSE)
-                         
-                         plot$addTag(as.character(species))
-                         
-                         source.names = Vector2Set(c(as.character(plot.name)))
-                         epoch$insertMeasurement(as.character(species),
-                                                 source.names,
-                                                 Vector2Set(c()),
-                                                 NewUrl(file.name),
-                                                 "text/csv")
-                       })
-                       
-                       context$commitTransaction()
-                       
-                       WaitForPendingUploads(context)  
-                     }
+                       cat(sprintf("      %s\n", species))
+                       src$addTag(species)
+                     })
+                     
+                     
+                     WaitForPendingUploads(context)
                    })
   
-  return(epoch.groups)
+  return(container)
 }
 
