@@ -39,7 +39,7 @@ DayEnds <- function(date.time) {
 
 habitats <- list(m = 'mesic', d = 'dry', w = 'wet')
 
-#' Imports field data from the "legacy" tempalte
+#' Imports field data from the "legacy" template
 #' 
 #' This import creates an EpochGroup for each date, an Epoch for each site and a Measurement
 #' for each species within the site.
