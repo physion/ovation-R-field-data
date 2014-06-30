@@ -60,24 +60,24 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
   cat("Checking Sources\n")
   cat("****************\n")
   known.sites <- new(J("java.util.HashSet"))
-#   swallow <- apply(df, 1, function(r) {
-#     plot.name <- r['PLOT']
-#     if(!known.sites$contains(plot.name)) {
-#       habitat <- habitats[[r['HABITAT']]]
-#       plot.label <- sprintf("Plot %s", plot.name)
-#       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
-#       cat(sprintf("  Checking %s...\n", plot.id))
-#       
-#       srcResult <- context$getOrInsertSource(plot.label, plot.id)
-#       
-#       if(srcResult$isNew()) {
-#         srcResult$get()$addProperty('habitat', habitat)
-#       }
-#       
-#       known.sites$add(plot.name)
-#     }
-#     
-#   })
+  #   swallow <- apply(df, 1, function(r) {
+  #     plot.name <- r['PLOT']
+  #     if(!known.sites$contains(plot.name)) {
+  #       habitat <- habitats[[r['HABITAT']]]
+  #       plot.label <- sprintf("Plot %s", plot.name)
+  #       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
+  #       cat(sprintf("  Checking %s...\n", plot.id))
+  #       
+  #       srcResult <- context$getOrInsertSource(plot.label, plot.id)
+  #       
+  #       if(srcResult$isNew()) {
+  #         srcResult$get()$addProperty('habitat', habitat)
+  #       }
+  #       
+  #       known.sites$add(plot.name)
+  #     }
+  #     
+  #   })
   
   
   # Insert data group by YEAR
@@ -89,7 +89,7 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                    .fun=function(g) {
                      
                      year = unique(g$YEAR)
-                     
+                    
                      cat(sprintf("Importing %s... \n", as.character(year)))
                      start.doy = min(g$DOY)
                      end.doy = max(g$DOY)
@@ -132,29 +132,34 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                                              'text/csv');
                      
                      
-                     # Update Plot tags
-                     cat("    Adding species tags...\n")
-                     sources <- new(J("java.util.HashMap"))
-                     apply(g, 1, function(r) {
-                       species <- r['SPECIES']
-                       plot.name <- r['PLOT']
-                       plot.label <- sprintf("Plot %s", plot.name)
-                       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
-                       if(sources$containsKey(plot.name)) {
-                         src <- sources$get(plot.name)
-                       } else {
-                         src <- context$getOrInsertSource(plot.label, plot.id)$get()  
-                         sources$put(plot.name, src)
-                       }
-                       
-                       cat(sprintf("      %s\n", species))
-                       src$addTag(species)
-                     })
-                     
                      
                      WaitForPendingUploads(context)
                    })
   
+  # Update Plot tags
+  cat("Updating tags\n")
+  cat("*************\n")
+  sources <- new(J("java.util.HashMap"))
+  swallow <- d_ply(df, .variables=.(SPECIES, PLOT), 
+                   #.progress = progress_text(char = "."), 
+                   .fun=function(gg) {
+                     
+                     species <- as.character(unique(gg$SPECIES))
+                     plot.name <- as.character(unique(gg$PLOT))
+                     
+                     cat(sprintf("      %s -> %s", species, plot.name))
+                     plot.label <- sprintf("Plot %s", plot.name)
+                     plot.id <- sprintf("rmbl-phenology-%s", plot.name)
+                     
+                     if(sources$containsKey(plot.name)) {
+                       src <- sources$get(plot.name)
+                     } else {
+                       src <- context$getOrInsertSource(plot.label, plot.id)$get()  
+                       sources$put(plot.name, src)
+                     }
+                     
+                     src$addTag(species)
+                   });
   return(container)
 }
 
