@@ -108,8 +108,13 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                      })
                      
                      # Insert an Epoch for these measurements
+                     epochGroup <- container$insertEpochGroup(sprintf("%s", start.date$getYear()),
+                                                              start.date,
+                                                              NULL,
+                                                              new(J("java.util.HashMap")),
+                                                              new(J("java.util.HashMap")))
                      
-                     epoch <- container$insertEpoch(input.sources,
+                     epoch <- epochGroup$insertEpoch(input.sources,
                                                     NULL,
                                                     start.date,
                                                     end.date,
