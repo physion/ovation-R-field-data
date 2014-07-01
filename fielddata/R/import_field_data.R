@@ -134,7 +134,7 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                      species <- as.character(unique(gg$SPECIES))
                      plot.name <- as.character(unique(gg$PLOT))
                      
-                     cat(sprintf("      %s -> %s", species, plot.name))
+                     cat(sprintf("      %s -> %s\n", species, plot.name))
                      plot.label <- sprintf("Plot %s", plot.name)
                      plot.id <- sprintf("rmbl-phenology-%s", plot.name)
                      
