@@ -56,28 +56,8 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
   container <- context$getObjectWithURI(container.uri)
   
   cat("\n\n")
-  # Insert Sources if not already present
-  cat("Checking Sources\n")
-  cat("****************\n")
+
   known.sites <- new(J("java.util.HashSet"))
-  #   swallow <- apply(df, 1, function(r) {
-  #     plot.name <- r['PLOT']
-  #     if(!known.sites$contains(plot.name)) {
-  #       habitat <- habitats[[r['HABITAT']]]
-  #       plot.label <- sprintf("Plot %s", plot.name)
-  #       plot.id <- sprintf("rmbl-phenology-%s", plot.name)
-  #       cat(sprintf("  Checking %s...\n", plot.id))
-  #       
-  #       srcResult <- context$getOrInsertSource(plot.label, plot.id)
-  #       
-  #       if(srcResult$isNew()) {
-  #         srcResult$get()$addProperty('habitat', habitat)
-  #       }
-  #       
-  #       known.sites$add(plot.name)
-  #     }
-  #     
-  #   })
   
   
   # Insert data group by YEAR
@@ -102,9 +82,11 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                      input.sources <- new(J("java.util.HashMap"))
                      lapply(as.character(plot.sites), function(plot) {
                        plot.label <- sprintf("Plot %s", plot)
-                       plot.id <- sprintf("rmbl-phenology-%s", plot)
+                       plot.id <- sprintf("rmbl-inouye-phenology-%s", plot)
                        srcResult <- context$getOrInsertSource(plot.label, plot.id)
-                       input.sources$put(plot, srcResult$get())
+                       src <- srcResult$get()
+                       known.sites$add(src)
+                       input.sources$put(plot, src)
                      })
                      
                      # Insert an Epoch for these measurements
