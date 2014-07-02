@@ -136,12 +136,12 @@ ImportLegacyCSV <- function(csv.path, context, protocol.uri, container.uri, tzon
                      
                      cat(sprintf("      %s -> %s\n", species, plot.name))
                      plot.label <- sprintf("Plot %s", plot.name)
-                     plot.id <- sprintf("rmbl-phenology-%s", plot.name)
+                     plot.id <- sprintf("rmbl-inouye-phenology-%s", plot.name)
                      
                      if(sources$containsKey(plot.name)) {
                        src <- sources$get(plot.name)
                      } else {
-                       src <- context$getOrInsertSource(plot.label, plot.id)$get()  
+                       src <- context$getOrInsertSource(plot.label, plot.id)$get()
                        sources$put(plot.name, src)
                      }
                      
